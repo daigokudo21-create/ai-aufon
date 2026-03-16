@@ -52,4 +52,4 @@ def refresh():
     return f"updated: {len(rankings)} items"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)=10000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
