@@ -1,45 +1,55 @@
 from flask import Flask, render_template, request
-from scheduler import start_scheduler
 from result_store import load_results
+from scheduler import build_rankings
 
 app = Flask(__name__)
 
-start_scheduler()
-
 @app.route("/")
 def index():
-    selected_model = request.args.get("model", "")
-    selected_damage = request.args.get("damage", "")
-    profit_filter = request.args.get("profit", "")
+    rankings = load_results()
 
-    results = load_results()
+    if not rankings:
+        print("[app] no saved results, rebuilding...")
+        rankings = build_rankings()
 
-    if selected_model:
-        results = [r for r in results if r["model"] == selected_model]
+    model_filter = request.args.get("model", "").strip()
+    issue_filter = request.args.get("issue", "").strip()
+    min_profit = request.args.get("min_profit", "").strip()
 
-    if selected_damage:
-        results = [r for r in results if r["damage"] == selected_damage]
+    filtered = rankings
 
-    if profit_filter == "plus":
-        results = [r for r in results if r["profit"] > 0]
-    elif profit_filter == "5000":
-        results = [r for r in results if r["profit"] >= 5000]
-    elif profit_filter == "10000":
-        results = [r for r in results if r["profit"] >= 10000]
+    if model_filter:
+        filtered = [x for x in filtered if x.get("model") == model_filter]
 
-    results = sorted(results, key=lambda x: x["profit"], reverse=True)
+    if issue_filter:
+        filtered = [x for x in filtered if x.get("issue") == issue_filter]
+
+    if min_profit:
+        try:
+            min_profit_value = int(min_profit)
+            filtered = [x for x in filtered if int(x.get("profit", 0)) >= min_profit_value]
+        except Exception:
+            pass
+
+    models = sorted(list({x.get("model", "") for x in rankings if x.get("model")}))
+    issues = sorted(list({x.get("issue", "") for x in rankings if x.get("issue")}))
+
+    print(f"[app] rankings count={len(rankings)} filtered count={len(filtered)}")
 
     return render_template(
         "index.html",
-        results=results,
-        selected_model=selected_model,
-        selected_damage=selected_damage,
-        profit_filter=profit_filter
+        rankings=filtered,
+        all_models=models,
+        all_issues=issues,
+        model_filter=model_filter,
+        issue_filter=issue_filter,
+        min_profit=min_profit,
     )
 
-@app.route("/healthz")
-def healthz():
-    return "ok", 200
+@app.route("/refresh")
+def refresh():
+    rankings = build_rankings()
+    return f"updated: {len(rankings)} items"
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(host="0.0.0.0", port=5000, debug=True)=10000)
