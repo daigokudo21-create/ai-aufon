@@ -10,6 +10,7 @@ EXCLUDE_WORDS = [
     "新品",
     "未使用",
     "新品未使用",
+    "SIMフリー新品",
 ]
 
 def get_yahoo_items(keyword):
@@ -44,6 +45,7 @@ def get_yahoo_items(keyword):
         except Exception:
             continue
 
+        # 新品系を除外
         if any(word in title for word in EXCLUDE_WORDS):
             continue
 
