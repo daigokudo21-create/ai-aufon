@@ -1,0 +1,8 @@
+
+Flask
+requests
+beautifulsoup4
+apscheduler
+opencv-python
+numpy
+Pillow

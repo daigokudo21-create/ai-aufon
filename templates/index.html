@@ -1,0 +1,38 @@
+
+<html>
+<head>
+<title>スマホ転売AI</title>
+</head>
+
+<body>
+
+<h1>利益ランキング</h1>
+
+<table border="1">
+
+<tr>
+<th>タイトル</th>
+<th>仕入</th>
+<th>修理</th>
+<th>売価</th>
+<th>利益</th>
+<th>回転率</th>
+</tr>
+
+{% for r in results %}
+
+<tr>
+<td>{{r.title}}</td>
+<td>{{r.buy}}</td>
+<td>{{r.repair}}</td>
+<td>{{r.sell}}</td>
+<td>{{r.profit}}</td>
+<td>{{r.rotation}}%</td>
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>
