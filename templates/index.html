@@ -21,13 +21,13 @@
       display: inline-block;
       padding: 8px 12px;
       background: #2563eb;
-      color: #fff;
+      color: white;
       text-decoration: none;
       border-radius: 6px;
       margin-right: 8px;
     }
     form {
-      background: #fff;
+      background: white;
       padding: 16px;
       border-radius: 10px;
       margin-bottom: 16px;
@@ -40,7 +40,7 @@
     table {
       width: 100%;
       border-collapse: collapse;
-      background: #fff;
+      background: white;
       border-radius: 10px;
       overflow: hidden;
     }
@@ -53,21 +53,18 @@
     th {
       background: #f0f0f0;
     }
-    tr:hover {
-      background: #fafafa;
-    }
-    .empty {
-      text-align: center;
-      color: #666;
-      padding: 24px;
-    }
     .profit-plus {
-      color: #0a7a28;
+      color: green;
       font-weight: bold;
     }
     .profit-minus {
-      color: #c62828;
+      color: red;
       font-weight: bold;
+    }
+    .empty {
+      text-align: center;
+      padding: 24px;
+      color: #666;
     }
   </style>
 </head>
@@ -131,7 +128,7 @@
         <tr>
           <td colspan="8" class="empty">
             データが0件です。<br>
-            /refresh を押して再取得してください。
+            「データ更新」を押してください。
           </td>
         </tr>
       {% endif %}
