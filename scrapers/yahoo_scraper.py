@@ -8,6 +8,7 @@ EXCLUDE_WORDS = [
 ]
 
 def get_yahoo_items(keyword):
+    # fixed_price=1 で即決ありに寄せる
     url = f"https://auctions.yahoo.co.jp/search/search?p={keyword}&fixed_price=1"
     headers = {"User-Agent": "Mozilla/5.0"}
 
@@ -19,7 +20,7 @@ def get_yahoo_items(keyword):
 
     items = []
 
-    for item in soup.select("li.Product")[:50]:
+    for item in soup.select("li.Product")[:80]:
         try:
             title = item.select_one("h3").text.strip()
             price_text = item.select_one(".Product__priceValue").text
@@ -29,6 +30,13 @@ def get_yahoo_items(keyword):
             continue
 
         if any(word in title for word in EXCLUDE_WORDS):
+            continue
+
+        # 即決だけを優先して拾うための判定
+        text_block = item.get_text(" ", strip=True)
+
+        # 「即決」や「今すぐ落札」が含まれるものを優先
+        if ("即決" not in text_block) and ("今すぐ落札" not in text_block):
             continue
 
         items.append({
