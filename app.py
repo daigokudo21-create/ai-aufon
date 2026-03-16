@@ -1,81 +1,74 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+from scheduler import start_scheduler
 from scrapers.yahoo_scraper import get_yahoo_items
 from scrapers.mercari_scraper import get_mercari_price
-from scrapers.arps_scraper import get_arps_price
 from analysis.profit_calc import calc_profit
-from analysis.rotation_rate import get_rotation
+from analysis.title_classifier import detect_model, detect_damage
+from parts_db import PARTS_DB
 
 app = Flask(__name__)
 
-FALLBACK_PARTS = {
-    "screen": 3000,
-    "battery": 1500,
-    "camera": 2500,
-    "camera_glass": 800,
-    "unknown": 0,
-}
+start_scheduler()
 
-def detect_damage_from_title(title: str) -> str:
-    t = title.lower()
-    if "画面" in t or "液晶" in t or "割れ" in t:
-        return "screen"
-    if "バッテリー" in t:
-        return "battery"
-    if "カメラガラス" in t or "カメラ ガラス" in t:
-        return "camera_glass"
-    if "カメラ" in t:
-        return "camera"
-    return "unknown"
+MODELS = ["iphone11", "iphone12", "iphone13", "iphone14"]
+
+@app.route("/")
+def index():
+    selected_model = request.args.get("model", "")
+    selected_damage = request.args.get("damage", "")
+    profit_filter = request.args.get("profit", "")
+
+    results = []
+
+    targets = MODELS if not selected_model else [selected_model]
+
+    for search_model in targets:
+        sell_price = get_mercari_price(search_model)
+        items = get_yahoo_items(search_model)
+
+        for item in items:
+            model = detect_model(item["title"]) or search_model
+            damage = detect_damage(item["title"])
+
+            repair = PARTS_DB.get(model, {}).get(damage, 0)
+            profit = calc_profit(item["price"], sell_price, repair)
+
+            row = {
+                "title": item["title"],
+                "model": model,
+                "damage": damage,
+                "buy": item["price"],
+                "repair": repair,
+                "sell": sell_price,
+                "profit": profit,
+                "url": item["url"],
+            }
+
+            results.append(row)
+
+    if selected_damage:
+        results = [r for r in results if r["damage"] == selected_damage]
+
+    if profit_filter == "plus":
+        results = [r for r in results if r["profit"] > 0]
+    elif profit_filter == "5000":
+        results = [r for r in results if r["profit"] >= 5000]
+    elif profit_filter == "10000":
+        results = [r for r in results if r["profit"] >= 10000]
+
+    results = sorted(results, key=lambda x: x["profit"], reverse=True)
+
+    return render_template(
+        "index.html",
+        results=results,
+        selected_model=selected_model,
+        selected_damage=selected_damage,
+        profit_filter=profit_filter
+    )
 
 @app.route("/healthz")
 def healthz():
     return "ok", 200
-
-@app.route("/")
-def index():
-    model = "iphone11"
-
-    try:
-        sell_price = get_mercari_price(model)
-    except:
-        sell_price = 0
-
-    try:
-        rotation = get_rotation(model)
-    except:
-        rotation = 0
-
-    try:
-        items = get_yahoo_items(model)
-    except:
-        items = []
-
-    results = []
-
-    for item in items[:10]:
-        damage = detect_damage_from_title(item["title"])
-
-        try:
-            repair = get_arps_price(model, damage)
-            if not repair:
-                repair = FALLBACK_PARTS.get(damage, 0)
-        except:
-            repair = FALLBACK_PARTS.get(damage, 0)
-
-        profit = calc_profit(item["price"], sell_price, repair)
-
-        results.append({
-            "title": item["title"],
-            "buy": item["price"],
-            "repair": repair,
-            "sell": sell_price,
-            "profit": profit,
-            "rotation": rotation
-        })
-
-    results = sorted(results, key=lambda x: x["profit"], reverse=True)
-
-    return render_template("index.html", results=results)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
