@@ -21,7 +21,7 @@ def load_results():
             data = json.load(f)
 
         if not isinstance(data, list):
-            print("[result_store] results.json is not a list")
+            print("[result_store] invalid results format")
             return []
 
         print(f"[result_store] load_results count={len(data)}")
