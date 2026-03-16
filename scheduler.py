@@ -62,11 +62,9 @@ def build_rankings():
                 sell_price = estimate_sell_price(model)
                 profit = sell_price - buy_price - repair_cost
 
-                # 売値が無いものは除外
                 if sell_price <= 0:
                     continue
 
-                # 利益が大きくマイナスのものは除外
                 if profit < -5000:
                     continue
 
