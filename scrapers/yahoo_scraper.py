@@ -19,7 +19,7 @@ def get_yahoo_items(keyword):
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
         soup = BeautifulSoup(r.text, "html.parser")
-    except:
+    except Exception:
         return []
 
     items = []
@@ -28,21 +28,17 @@ def get_yahoo_items(keyword):
     for item in soup.select("li.Product")[:30]:
         try:
             title = item.select_one("h3").text.strip()
-            price_text = item.select_one(".Product__priceValue").text
+            price_text = item.select_one(".Product__priceValue").text.strip()
             price = int(price_text.replace("円", "").replace(",", ""))
             link = item.select_one("a")["href"]
-        except:
+        except Exception:
             continue
 
         # 新品除外
         if any(word in title for word in EXCLUDE_WORDS):
             continue
 
-        # 即決だけを優先して拾う
-        text_block = item.get_text(" ", strip=True)
-        if ("即決" not in text_block) and ("今すぐ落札" not in text_block):
-            continue
-
+        # 即決限定をいったん解除
         items.append({
             "title": title,
             "price": price,
