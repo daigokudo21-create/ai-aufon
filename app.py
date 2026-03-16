@@ -24,6 +24,11 @@ def index():
 
     for search_model in targets:
         sell_price = get_mercari_price(search_model)
+
+        # 売値が0ならその機種は飛ばす
+        if sell_price <= 0:
+            continue
+
         items = get_yahoo_items(search_model)
 
         for item in items:
