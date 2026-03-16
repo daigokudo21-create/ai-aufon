@@ -1,11 +1,11 @@
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import quote
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0"
 }
 
-# 新品などを除外
 EXCLUDE_WORDS = [
     "新品",
     "未使用",
@@ -13,36 +13,45 @@ EXCLUDE_WORDS = [
 ]
 
 def get_yahoo_items(keyword):
-    # fixed_price=1 で即決ありに寄せる
-    url = f"https://auctions.yahoo.co.jp/search/search?p={keyword}&fixed_price=1"
+    url = f"https://auctions.yahoo.co.jp/search/search?p={quote(keyword)}&fixed_price=1"
 
     try:
         r = requests.get(url, headers=HEADERS, timeout=15)
+        r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
-    except Exception:
+    except Exception as e:
+        print(f"[yahoo] request error keyword={keyword}: {e}")
         return []
 
     items = []
 
-    # 最大30件
     for item in soup.select("li.Product")[:30]:
         try:
-            title = item.select_one("h3").text.strip()
-            price_text = item.select_one(".Product__priceValue").text.strip()
-            price = int(price_text.replace("円", "").replace(",", ""))
-            link = item.select_one("a")["href"]
+            title_el = item.select_one("h3")
+            price_el = item.select_one(".Product__priceValue")
+            link_el = item.select_one("a")
+
+            if not title_el or not price_el or not link_el:
+                continue
+
+            title = title_el.get_text(strip=True)
+            price_text = price_el.get_text(strip=True)
+            price = int(price_text.replace("円", "").replace(",", "").replace(" ", ""))
+            link = link_el.get("href", "").strip()
+
+            if not title or not link:
+                continue
         except Exception:
             continue
 
-        # 新品除外
         if any(word in title for word in EXCLUDE_WORDS):
             continue
 
-        # 即決限定をいったん解除
         items.append({
             "title": title,
             "price": price,
             "url": link
         })
 
+    print(f"[yahoo] keyword={keyword} items={len(items)}")
     return items
